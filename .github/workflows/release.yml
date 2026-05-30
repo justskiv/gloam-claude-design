@@ -1,0 +1,48 @@
+name: Release
+
+# Publishing is a deliberate, tag-driven action: push a tag like `v1.0.1`
+# (or run this workflow manually). Plain pushes to main only run CI, they do
+# not publish.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx web-ext lint
+
+      - name: Build unsigned package
+        run: npm run build
+
+      - name: Sign & submit to AMO (listed)
+        if: env.AMO_JWT_ISSUER != ''
+        run: >
+          npx web-ext sign --channel=listed
+          --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET"
+          --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json
+          package-lock.json CHANGELOG.md 'test/**' 'coverage/**'
+
+      - name: Attach artifacts to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            web-ext-artifacts/*.zip
+            web-ext-artifacts/*.xpi

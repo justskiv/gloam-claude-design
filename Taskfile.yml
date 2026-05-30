@@ -1,0 +1,74 @@
+version: "3"
+
+# Self-contained task runner for the Gloam extension.
+# (The npm scripts in package.json run the same tools, for CI / npx users.)
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  install:
+    desc: Install dev tooling
+    cmds:
+      - npm install
+
+  run:
+    desc: Launch Firefox with the extension loaded + auto-reload
+    cmds:
+      - npx web-ext run
+
+  lint:
+    desc: Run every check (web-ext + eslint + stylelint + prettier)
+    cmds:
+      - task: lint:ext
+      - task: lint:js
+      - task: lint:css
+      - task: format:check
+
+  lint:ext:
+    desc: Validate manifest/packaging with Mozilla web-ext
+    cmds:
+      - npx web-ext lint
+
+  lint:js:
+    desc: Lint JavaScript with ESLint
+    cmds:
+      - npx eslint .
+
+  lint:css:
+    desc: Lint CSS with Stylelint
+    cmds:
+      - npx stylelint "**/*.css"
+
+  format:
+    desc: Format with Prettier (writes changes)
+    cmds:
+      - npx prettier --write .
+
+  format:check:
+    desc: Check formatting without writing
+    cmds:
+      - npx prettier --check .
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - node --test test/*.test.js
+
+  coverage:
+    desc: Run tests with coverage (writes coverage/lcov.info)
+    cmds:
+      - npx c8 node --test test/*.test.js
+
+  build:
+    desc: Build an installable .zip into web-ext-artifacts/
+    cmds:
+      - npx web-ext build --overwrite-dest --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'
+
+  sign:
+    desc: Sign as "unlisted" for permanent personal install (needs AMO API keys)
+    cmds:
+      - npx web-ext sign --channel=unlisted --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'

@@ -18,8 +18,8 @@ async function refreshBadge(enabled) {
   await api.action.setBadgeBackgroundColor({ color: "#6b6b66" });
   await api.action.setTitle({
     title: enabled
-      ? "Umbra: dark theme ON — click to disable"
-      : "Umbra: dark theme OFF — click to enable",
+      ? "Gloam: dark theme ON — click to disable"
+      : "Gloam: dark theme OFF — click to enable",
   });
 }
 

@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Umbra — Claude Design Dark",
+  "name": "Gloam — Dark Theme for Claude Design",
   "version": "1.0.0",
   "description": "Minimal dark theme for the Claude Design native panels. The design preview is left pixel-for-pixel untouched. Toggle on/off from the toolbar.",
+  "author": "Nikolay Tuzov",
+  "homepage_url": "https://github.com/justskiv/gloam",
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "umbra-claude-design@skiv",
+      "id": "gloam-claude-design@skiv",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": ["none"]
@@ -15,6 +17,7 @@
   },
 
   "icons": {
+    "32": "icons/icon.svg",
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
   },
@@ -22,8 +25,9 @@
   "permissions": ["storage"],
 
   "action": {
-    "default_title": "Umbra: toggle Claude Design dark theme",
+    "default_title": "Gloam: toggle Claude Design dark theme",
     "default_icon": {
+      "32": "icons/icon.svg",
       "48": "icons/icon.svg",
       "96": "icons/icon.svg"
     }
@@ -40,7 +44,7 @@
       "all_frames": true,
       "match_origin_as_fallback": true,
       "css": ["dark.css"],
-      "js": ["content.js"]
+      "js": ["color.js", "content.js"]
     }
   ]
 }

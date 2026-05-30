@@ -1,0 +1,13 @@
+comment: false
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+# Coverage targets the pure color engine (color.js); the DOM glue in
+# content.js / background.js is exercised in the browser, not unit-tested.

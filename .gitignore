@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build / signing output
+web-ext-artifacts/
+*.xpi
+*.zip
+
+# coverage
+coverage/
+*.lcov
+
+# secrets (AMO API credentials)
+.env
+.env.*
+
+# editor / os cruft
+.idea/
+.vscode/
+.DS_Store
+*.log

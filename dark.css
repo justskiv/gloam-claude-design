@@ -1,9 +1,9 @@
 /*
- * Umbra — base dark layer.
+ * Gloam — base dark layer.
  *
  * This file only sets the page-level surface and text so the canvas is dark
  * from the first paint (no white flash before content.js builds the detailed
- * overrides). It is gated on the data-umbra="on" attribute that content.js
+ * overrides). It is gated on the data-gloam="on" attribute that content.js
  * adds, so when the extension is toggled off it does nothing at all.
  *
  * The native colors of individual surfaces, borders and text are handled by
@@ -11,15 +11,15 @@
  * separate document and is never matched by these rules.
  */
 
-html[data-umbra="on"] {
+html[data-gloam="on"] {
   background-color: #262624 !important;
   color-scheme: dark;
-  scrollbar-color: #4a4945 transparent;
+  scrollbar-color: #42413e transparent;
 }
 
-html[data-umbra="on"] body {
+html[data-gloam="on"] body {
   background-color: #262624 !important;
-  color: rgba(245, 244, 238, 0.92) !important;
+  color: rgba(245, 244, 238, 0.95) !important;
 }
 
 /*
@@ -29,6 +29,6 @@ html[data-umbra="on"] body {
  * A subtle brightness lift restores consistent feedback without depending on
  * any hashed styled-components class.
  */
-html[data-umbra="on"] button:hover {
-  filter: brightness(1.25);
+html[data-gloam="on"] button:hover {
+  filter: brightness(1.13);
 }

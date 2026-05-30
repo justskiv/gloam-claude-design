@@ -1,0 +1,11 @@
+{
+  "extends": "stylelint-config-standard",
+  "ignoreFiles": ["node_modules/**", "web-ext-artifacts/**", "coverage/**"],
+  "rules": {
+    "declaration-no-important": null,
+    "selector-class-pattern": null,
+    "color-function-notation": null,
+    "alpha-value-notation": null,
+    "no-descending-specificity": null
+  }
+}

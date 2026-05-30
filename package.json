@@ -1,0 +1,39 @@
+{
+  "name": "gloam-claude-design",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gloam — a dark theme for the Claude Design native panels (Firefox).",
+  "homepage": "https://github.com/justskiv/gloam",
+  "author": "Nikolay Tuzov",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "start": "web-ext run",
+    "lint": "web-ext lint && eslint . && stylelint \"**/*.css\" && prettier --check .",
+    "lint:fix": "eslint . --fix && prettier --write .",
+    "format": "prettier --write .",
+    "test": "node --test test/*.test.js",
+    "coverage": "c8 node --test test/*.test.js",
+    "build": "web-ext build --overwrite-dest --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'",
+    "sign": "web-ext sign --channel=unlisted --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'"
+  },
+  "c8": {
+    "include": [
+      "color.js"
+    ],
+    "reporter": [
+      "text",
+      "lcovonly"
+    ],
+    "report-dir": "coverage"
+  },
+  "devDependencies": {
+    "c8": "^10.1.2",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3",
+    "stylelint": "^16.10.0",
+    "stylelint-config-standard": "^36.0.1",
+    "web-ext": "^8.3.0"
+  }
+}

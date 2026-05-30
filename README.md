@@ -1,49 +1,137 @@
-# Umbra — Claude Design Dark
+<!-- Badges: the GitHub repo slug and AMO slug are placeholders — update them
+     once the repo is created / the add-on is published. -->
 
-Минималистичная тёмная тема для **родных панелей** инструмента
-[Claude Design](https://claude.ai/design), оформленная под нативную тёмную
-палитру Claude. Окно превью (мок, который рендерит Claude) **не затрагивается
-вообще** — оно живёт в отдельном cross-origin `<iframe>`, до которого
-расширение физически не дотягивается.
+[![Mozilla Add-on Version](https://img.shields.io/amo/v/gloam-claude-design-dark)](https://addons.mozilla.org/firefox/addon/gloam-claude-design-dark/)
+[![Mozilla Add-on Users](https://img.shields.io/amo/users/gloam-claude-design-dark)](https://addons.mozilla.org/firefox/addon/gloam-claude-design-dark/)
+[![Firefox](https://img.shields.io/badge/Firefox-128%2B-FF7139?logo=firefoxbrowser&logoColor=white)](https://www.mozilla.org/firefox/)
+[![Telegram](https://img.shields.io/badge/Telegram-%40ntuzov-26A5E4?logo=telegram&logoColor=white)](https://t.me/ntuzov)
 
-Кнопка на панели инструментов включает/выключает тему. Выключено — страница
-остаётся ровно такой, какой была, без единого изменения.
+[![CI](https://github.com/justskiv/gloam/actions/workflows/ci.yml/badge.svg)](https://github.com/justskiv/gloam/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/justskiv/gloam/branch/main/graph/badge.svg)](https://codecov.io/gh/justskiv/gloam)
+[![Coverage Status](https://coveralls.io/repos/github/justskiv/gloam/badge.svg?branch=main)](https://coveralls.io/github/justskiv/gloam?branch=main)
 
-## Как это работает
+# Gloam — Dark Theme for Claude Design
 
-Тема построена на **ремапе по значению цвета**, а не по CSS-классам:
+A minimal Firefox extension that gives the **[Claude Design](https://claude.ai/design)
+native panels** a dark theme matching Claude's own warm-charcoal palette — while
+leaving the **design preview pixel-for-pixel untouched**.
 
-1. Claude красит свою обвязку фиксированным набором «бумажных» токенов
-   (кремовый фон `#faf9f5`, тёмный текст `rgba(15,12,8,…)`, акцент
-   `#d97757`). `content.js` читает собственные таблицы стилей страницы,
-   находит эти токены и генерирует оверрайды в нативные тёмные значения
-   Claude (`#262624`, `#30302e`, светлый текст, тот же `#d97757`).
-2. Сопоставление идёт по распарсенным RGBA-компонентам, поэтому переживает
-   и сериализацию CSSOM (`#faf9f5` → `rgb(250, 249, 245)`), и смену
-   хеш-классов styled-components при каждом релизе Claude.
-3. Оверрайды кладутся в отдельный `<style>`; **исходные стили страницы не
-   правятся**. Выключение = удалить этот `<style>` и атрибут → страница
-   байт-в-байт исходная.
+<p align="center">
+  <img src="assets/screenshot.png" alt="Gloam dark theme on the Claude Design dashboard" width="900">
+</p>
 
-Превью не трогается by design: его стили лежат в чужом origin
-(`*.claudeusercontent.com`) и в `document.styleSheets` этой страницы их нет.
+## Why
 
-## Файлы
+The Claude Design tool ships no dark mode and renders its chrome in a light
+"paper" palette. The design preview you are working on, however, must stay
+exactly as you authored it. Gloam darkens only the surrounding interface
+(chat, header, tabs, cards, toolbars) and never the preview.
 
-| Файл             | Назначение                                                  |
-| ---------------- | ----------------------------------------------------------- |
-| `manifest.json`  | MV3, контент-скрипт на `claude.ai/design*`, тулбар-кнопка   |
-| `content.js`     | движок ремапа цветов + observer + вкл/выкл по storage       |
-| `dark.css`       | базовый тёмный слой (анти-FOUC), включается по `data-umbra` |
-| `background.js`  | обработчик клика по кнопке, бейдж состояния                 |
-| `icons/icon.svg` | иконка панели                                               |
+## Features
 
-## Палитра
+- 🌑 Native-feeling Claude dark palette (warm charcoal, real `#d97757` accent).
+- 🪟 The design preview is **never** modified — it lives in a cross-origin
+  iframe the extension cannot and does not reach.
+- 🔘 One-click toolbar toggle; the on/off state is remembered.
+- 🧯 Off means **off** — disabling restores the page byte-for-byte.
+- 🪶 Tiny and dependency-free: one content script, one stylesheet, one icon.
 
-Цветовая карта (светлый токен → тёмный) задана в `content.js`, массив
-`TOKENS` — там же её и править, если Claude поменяет дизайн-токены.
+## How it works
 
-## Установка
+Claude's UI is built with styled-components whose class hashes change on every
+deploy, so theming by selector would break constantly. Instead Gloam remaps the
+page's own colors **by value** — the brand design tokens (`#faf9f5`,
+`rgba(15,12,8,…)`, `#d97757`, …) are stable. The remap is **role-aware**: a light
+color used as a background becomes dark, but the same color used as text stays
+light. A luminance fallback recolors any near-neutral shade that is not in the
+token table, so the theme keeps working as Claude evolves.
 
-См. [`../docs/PUBLISHING.md`](../docs/PUBLISHING.md). Коротко: для разработки —
-`task run PLUGIN=umbra`; поставить себе навсегда — `task sign PLUGIN=umbra`.
+## Install
+
+### From Firefox Add-ons (recommended)
+
+> Coming soon — the AMO listing link will go here once published.
+
+### Temporary load (for trying it out / development)
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. **Load Temporary Add-on…**
+3. Select `manifest.json` in this folder.
+
+The add-on stays loaded until you restart Firefox.
+
+### Manual install (signed `.xpi`)
+
+Download the latest signed `.xpi` from the
+[Releases](../../releases) page, then open `about:addons` → ⚙ →
+**Install Add-on From File…**.
+
+## Usage
+
+Click the **Gloam** toolbar button to toggle the dark theme. When enabled the
+theme applies automatically on every `claude.ai/design` tab; when disabled the
+page is left completely unchanged. The button title and badge reflect the state.
+
+## Permissions
+
+| Permission                    | Why                                               |
+| ----------------------------- | ------------------------------------------------- |
+| `storage`                     | Remember the on/off toggle (a single local flag). |
+| access to `claude.ai/design*` | Inject the theme only on the Claude Design tool.  |
+
+## Privacy
+
+Gloam collects and transmits **nothing**. There is no tracking, no network
+request, and no remote code. The only stored value is your local on/off
+preference. The manifest declares `data_collection_permissions: ["none"]`.
+
+## Development
+
+Self-contained, no build step. Use [Task](https://taskfile.dev/) or run the
+tools directly with `npx` / `npm`:
+
+```bash
+task install      # npm install
+task run          # npx web-ext run     — Firefox + auto-reload
+task lint         # web-ext + eslint + stylelint + prettier
+task test         # node --test         — unit tests
+task coverage     # node --test + c8    — writes coverage/lcov.info
+task build        # npx web-ext build   — installable .zip
+task sign         # npx web-ext sign --channel=unlisted   — signed .xpi (AMO keys)
+```
+
+Plain equivalents without Task:
+
+```bash
+npx web-ext run
+npx web-ext lint
+npm test
+npm run coverage
+npx web-ext build
+npx web-ext sign --channel=unlisted
+```
+
+### Tests
+
+The pure color engine (`color.js`) is unit-tested with `node --test`, and
+coverage is reported to Codecov and Coveralls in CI. The DOM glue
+(`content.js`, `background.js`) is exercised in the browser, not unit-tested.
+
+### Tweaking the palette
+
+All colors live in `color.js` — the `TOKENS` map (light source token → dark
+target) and the luminance fallback in `mapColor`. The page-level base color,
+scrollbar and hover affordance live in `dark.css`.
+
+## Releasing
+
+CI runs on every push/PR to `main`. Publishing is **tag-driven**: bump
+`version` in `manifest.json`, push a tag like `v1.0.1`, and the release
+workflow builds, signs (if the `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` secrets are
+set), and attaches the package to a GitHub Release. For a permanent personal
+install without publishing, `task sign` produces a signed `.xpi` you can load
+from `about:addons`.
+
+## License
+
+[MIT](LICENSE) © Nikolay Tuzov

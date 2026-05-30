@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Umbra — Claude Design Dark",
+  "version": "1.0.0",
+  "description": "Minimal dark theme for the Claude Design native panels. The design preview is left pixel-for-pixel untouched. Toggle on/off from the toolbar.",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "umbra-claude-design@skiv",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "permissions": ["storage"],
+
+  "action": {
+    "default_title": "Umbra: toggle Claude Design dark theme",
+    "default_icon": {
+      "48": "icons/icon.svg",
+      "96": "icons/icon.svg"
+    }
+  },
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://claude.ai/design*"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "css": ["dark.css"],
+      "js": ["content.js"]
+    }
+  ]
+}

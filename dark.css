@@ -1,0 +1,34 @@
+/*
+ * Umbra — base dark layer.
+ *
+ * This file only sets the page-level surface and text so the canvas is dark
+ * from the first paint (no white flash before content.js builds the detailed
+ * overrides). It is gated on the data-umbra="on" attribute that content.js
+ * adds, so when the extension is toggled off it does nothing at all.
+ *
+ * The native colors of individual surfaces, borders and text are handled by
+ * content.js (value-based remap). The cross-origin preview iframe is a
+ * separate document and is never matched by these rules.
+ */
+
+html[data-umbra="on"] {
+  background-color: #262624 !important;
+  color-scheme: dark;
+  scrollbar-color: #4a4945 transparent;
+}
+
+html[data-umbra="on"] body {
+  background-color: #262624 !important;
+  color: rgba(245, 244, 238, 0.92) !important;
+}
+
+/*
+ * Class-independent hover affordance. Most buttons here have no CSS :hover
+ * rule (their state is JS-driven), and the value remap collapses their
+ * near-black fills onto a single surface, so hover stopped showing any change.
+ * A subtle brightness lift restores consistent feedback without depending on
+ * any hashed styled-components class.
+ */
+html[data-umbra="on"] button:hover {
+  filter: brightness(1.25);
+}

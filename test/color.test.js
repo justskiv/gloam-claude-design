@@ -62,10 +62,11 @@ test("low-alpha warm-ink shadows are left dark (not lightened)", () => {
   assert.equal(mapColor("rgba(15, 12, 8, 0.25)", false), "rgba(15, 12, 8, 0.25)");
 });
 
-test("luminance fallback darkens unmapped light neutrals (active-tab bug)", () => {
-  // #faf8f4 is in the active-tab gradient but not in the token table.
-  assert.equal(mapColor("#faf8f4", false), "#353431");
-  assert.equal(mapColor("#dbd9d4", false), "#3a3a37"); // tab border
+test("luminance fallback lifts near-white surfaces so raised ones read as raised", () => {
+  // #faf8f4 is the active-tab gradient top: near-white -> the highest dark step,
+  // so the active tab sits clearly above the base bar instead of merging into it.
+  assert.equal(mapColor("#faf8f4", false), "#4a4946");
+  assert.equal(mapColor("#dbd9d4", false), "#3a3a37"); // mid-light: tab border/edge
 });
 
 test("semi-transparent white: keep faint highlights, soften heavy fills", () => {
@@ -82,7 +83,7 @@ test("the orange accent-button glow becomes a clean dark shadow", () => {
 
 test("remap rewrites every color in a gradient, leaving unknown ones", () => {
   const out = remap("linear-gradient(rgb(250, 248, 244) 0%, rgb(255, 255, 255) 60%)", false);
-  assert.equal(out, "linear-gradient(#353431 0%, #3a3a37 60%)");
+  assert.equal(out, "linear-gradient(#4a4946 0%, #3a3a37 60%)");
   // Unknown colors pass through untouched.
   assert.equal(remap("1px solid #123456", false), "1px solid #123456");
 });
@@ -100,8 +101,8 @@ test("luminance fallback: dark-neutral text lifts to light", () => {
   assert.equal(mapColor("#2a2a2a", true), LIGHT_TEXT);
 });
 
-test("luminance fallback: mid-neutral surface drops to the darkest step", () => {
-  assert.equal(mapColor("#888888", false), "#42413e");
+test("luminance fallback: a dim neutral surface maps to the lowest step", () => {
+  assert.equal(mapColor("#888888", false), "#353431");
 });
 
 test("a token with a dark target reads light when used as text", () => {

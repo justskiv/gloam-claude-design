@@ -20,14 +20,14 @@ function warmInk(a, to) {
 }
 
 // Native Claude dark elevation ladder — one warm-neutral hue, progressively
-// lifted (base 38 → 46 → 53 → 58 → 66). Reused by the token table below and the
+// lifted (base 38 → 46 → 53 → 58 → 73). Reused by the token table below and the
 // luminance fallback so the two never drift apart.
 const SURFACE = {
   base: "#262624", // app background
   low: "#2e2e2c",
   mid: "#353431", // cards, pills
   high: "#3a3a37", // header, buttons
-  raised: "#42413e", // top of the fallback ladder
+  raised: "#4a4946", // most-lifted near-white surface (e.g. the active tab)
 };
 
 // Light source token -> native Claude dark token, matched by RGBA components
@@ -174,13 +174,14 @@ function mapColor(literal, foreground) {
     if (foreground) {
       if (lum < DARK_TEXT_MAX_LUM) return LIGHT_TEXT; // dark neutral text -> light
     } else if (c.a >= MIN_OPAQUE_ALPHA && lum > LIGHT_LUM) {
-      // Light/mid neutral surface/border -> a dark surface, scaled by how light
-      // it was so gradients keep a subtle step.
+      // Light neutral surface -> a dark one, lifted the lighter it was, so a
+      // near-white raised element (e.g. the active tab) reads as raised above
+      // the base instead of collapsing onto it.
       return lum > SURFACE_LUM_HI
-        ? SURFACE.mid
+        ? SURFACE.raised
         : lum > SURFACE_LUM_MID
           ? SURFACE.high
-          : SURFACE.raised;
+          : SURFACE.mid;
     }
   }
   return literal;

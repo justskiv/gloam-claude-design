@@ -1,8 +1,5 @@
-<!-- Badges: the GitHub repo slug and AMO slug are placeholders — update them
-     once the repo is created / the add-on is published. -->
-
-[![Mozilla Add-on Version](https://img.shields.io/amo/v/gloam-claude-design-dark)](https://addons.mozilla.org/firefox/addon/gloam-claude-design-dark/)
-[![Mozilla Add-on Users](https://img.shields.io/amo/users/gloam-claude-design-dark)](https://addons.mozilla.org/firefox/addon/gloam-claude-design-dark/)
+[![Mozilla Add-on Version](https://img.shields.io/amo/v/gloam-claude-design)](https://addons.mozilla.org/firefox/addon/gloam-claude-design/)
+[![Mozilla Add-on Users](https://img.shields.io/amo/users/gloam-claude-design)](https://addons.mozilla.org/firefox/addon/gloam-claude-design/)
 [![Firefox](https://img.shields.io/badge/Firefox-128%2B-FF7139?logo=firefoxbrowser&logoColor=white)](https://www.mozilla.org/firefox/)
 [![Telegram](https://img.shields.io/badge/Telegram-%40ntuzov-26A5E4?logo=telegram&logoColor=white)](https://t.me/ntuzov)
 

@@ -24,6 +24,7 @@
     "ignoreFiles": [
       "README.md",
       "AGENTS.md",
+      "amo-metadata.json",
       "assets",
       "assets/**",
       "test",

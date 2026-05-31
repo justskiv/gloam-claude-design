@@ -37,6 +37,7 @@ jobs:
         run: >
           npx web-ext sign --channel=listed
           --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET"
+          --amo-metadata amo-metadata.json
 
       - name: Attach artifacts to the GitHub Release
         uses: softprops/action-gh-release@v2

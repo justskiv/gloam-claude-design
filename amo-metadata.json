@@ -1,0 +1,12 @@
+{
+  "summary": {
+    "en-US": "A dark theme for the Claude Design tool's native panels. The design preview you're working on is left untouched. Toggle on or off from the toolbar."
+  },
+  "categories": ["appearance"],
+  "version": {
+    "license": "MIT",
+    "release_notes": {
+      "en-US": "Initial release."
+    }
+  }
+}

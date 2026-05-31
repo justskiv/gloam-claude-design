@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Gloam — a dark theme for the Claude Design native panels (Firefox).",
-  "homepage": "https://github.com/justskiv/gloam",
+  "homepage": "https://github.com/justskiv/gloam-claude-design",
   "author": "Nikolay Tuzov",
   "license": "MIT",
   "type": "commonjs",

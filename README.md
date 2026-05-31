@@ -6,9 +6,9 @@
 [![Firefox](https://img.shields.io/badge/Firefox-128%2B-FF7139?logo=firefoxbrowser&logoColor=white)](https://www.mozilla.org/firefox/)
 [![Telegram](https://img.shields.io/badge/Telegram-%40ntuzov-26A5E4?logo=telegram&logoColor=white)](https://t.me/ntuzov)
 
-[![CI](https://github.com/justskiv/gloam/actions/workflows/ci.yml/badge.svg)](https://github.com/justskiv/gloam/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/justskiv/gloam/branch/main/graph/badge.svg)](https://codecov.io/gh/justskiv/gloam)
-[![Coverage Status](https://coveralls.io/repos/github/justskiv/gloam/badge.svg?branch=main)](https://coveralls.io/github/justskiv/gloam?branch=main)
+[![CI](https://github.com/justskiv/gloam-claude-design/actions/workflows/ci.yml/badge.svg)](https://github.com/justskiv/gloam-claude-design/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/justskiv/gloam-claude-design/branch/main/graph/badge.svg)](https://codecov.io/gh/justskiv/gloam-claude-design)
+[![Coverage Status](https://coveralls.io/repos/github/justskiv/gloam-claude-design/badge.svg?branch=main)](https://coveralls.io/github/justskiv/gloam-claude-design?branch=main)
 
 # Gloam — Dark Theme for Claude Design
 

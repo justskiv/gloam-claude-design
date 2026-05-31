@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Minimal dark theme for the Claude Design native panels. The design preview is left pixel-for-pixel untouched. Toggle on/off from the toolbar.",
   "author": "Nikolay Tuzov",
-  "homepage_url": "https://github.com/justskiv/gloam",
+  "homepage_url": "https://github.com/justskiv/gloam-claude-design",
 
   "browser_specific_settings": {
     "gecko": {

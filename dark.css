@@ -1,10 +1,11 @@
 /*
  * Gloam — base dark layer.
  *
- * This file only sets the page-level surface and text so the canvas is dark
- * from the first paint (no white flash before content.js builds the detailed
- * overrides). It is gated on the data-gloam="on" attribute that content.js
- * adds, so when the extension is toggled off it does nothing at all.
+ * This file sets only the page-level surface and text, so once enabled the
+ * canvas is dark before content.js finishes building the detailed overrides.
+ * It is gated on the data-gloam="on" attribute that content.js sets after
+ * reading the stored toggle, so a brief light flash is possible on first load;
+ * toggling off removes the attribute and this layer then does nothing.
  *
  * The native colors of individual surfaces, borders and text are handled by
  * content.js (value-based remap). The cross-origin preview iframe is a
@@ -29,6 +30,6 @@ html[data-gloam="on"] body {
  * A subtle brightness lift restores consistent feedback without depending on
  * any hashed styled-components class.
  */
-html[data-gloam="on"] button:hover {
+html[data-gloam="on"] button:not(:disabled):hover {
   filter: brightness(1.13);
 }

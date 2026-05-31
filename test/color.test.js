@@ -2,11 +2,33 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { parseColor, luminance, mapColor, remap } = require("../color.js");
+const {
+  parseColor,
+  luminance,
+  mapColor,
+  remap,
+  LIGHT_TEXT,
+  FG_PROPS,
+  ruleOverride,
+} = require("../color.js");
+
+// Minimal stand-in for a CSSStyleRule's read interface (no DOM needed).
+function styleRule(selectorText, props) {
+  const keys = Object.keys(props);
+  return {
+    selectorText,
+    style: {
+      length: keys.length,
+      item: (i) => keys[i],
+      getPropertyValue: (p) => props[p] ?? "",
+    },
+  };
+}
 
 test("parseColor handles hex, short hex, rgb and rgba", () => {
   assert.deepEqual(parseColor("#faf9f5"), { r: 250, g: 249, b: 245, a: 1 });
   assert.deepEqual(parseColor("#FFF"), { r: 255, g: 255, b: 255, a: 1 });
+  assert.deepEqual(parseColor("#08070680"), { r: 8, g: 7, b: 6, a: 128 / 255 }); // 8-digit hex
   assert.deepEqual(parseColor("rgb(250, 249, 245)"), { r: 250, g: 249, b: 245, a: 1 });
   assert.deepEqual(parseColor("rgba(15, 12, 8, 0.64)"), { r: 15, g: 12, b: 8, a: 0.64 });
   assert.equal(parseColor("not-a-color"), null);
@@ -67,4 +89,86 @@ test("remap rewrites every color in a gradient, leaving unknown ones", () => {
 
 test("luminance() ranks dark below light", () => {
   assert.ok(luminance({ r: 38, g: 38, b: 36 }) < luminance({ r: 245, g: 244, b: 238 }));
+});
+
+test("parseColor reads percentage alpha", () => {
+  assert.deepEqual(parseColor("rgba(0, 0, 0, 50%)"), { r: 0, g: 0, b: 0, a: 0.5 });
+});
+
+test("luminance fallback: dark-neutral text lifts to light", () => {
+  // #2a2a2a is not in the token table, so this exercises the fallback (not a token).
+  assert.equal(mapColor("#2a2a2a", true), LIGHT_TEXT);
+});
+
+test("luminance fallback: mid-neutral surface drops to the darkest step", () => {
+  assert.equal(mapColor("#888888", false), "#42413e");
+});
+
+test("a token with a dark target reads light when used as text", () => {
+  // #191915 is a button surface as background, but light text in a fg role.
+  assert.equal(mapColor("#191915", false), "#3a3a37");
+  assert.equal(mapColor("#191915", true), LIGHT_TEXT);
+});
+
+test("stroke is a foreground property (icon outlines stay light)", () => {
+  assert.ok(FG_PROPS.has("stroke"));
+  // a white stroke is text-like -> left light (no override emitted)
+  assert.equal(ruleOverride(styleRule(".i", { stroke: "#ffffff" })), "");
+  // the same white as a surface darkens
+  assert.equal(
+    ruleOverride(styleRule(".i", { "background-color": "#ffffff" })),
+    ".i{background-color:#3a3a37 !important}",
+  );
+});
+
+test("remap never rewrites a color-like id inside url(...)", () => {
+  assert.equal(remap("url(#fff)", false), "url(#fff)");
+  assert.equal(remap("#faf9f5 url(#fff) #faf9f5", false), "#262624 url(#fff) #262624");
+});
+
+test("ruleOverride wraps group rules with the correct at-rule", () => {
+  const inner = styleRule(".s", { color: "rgba(15, 12, 8, 0.92)" });
+  const innerOut = ".s{color:rgba(245, 244, 238, 0.95) !important}";
+
+  // @media is distinguished by .media (even when .conditionText is also present).
+  assert.equal(
+    ruleOverride({ cssRules: [inner], media: { mediaText: "screen" }, conditionText: "screen" }),
+    `@media screen{${innerOut}}`,
+  );
+  // @supports has .conditionText but no .media — must NOT be wrapped as @media.
+  assert.equal(
+    ruleOverride({ cssRules: [inner], conditionText: "(display: grid)" }),
+    `@supports (display: grid){${innerOut}}`,
+  );
+  // @container is distinguished by .containerQuery, with an optional name.
+  assert.equal(
+    ruleOverride({ cssRules: [inner], containerQuery: "(min-width: 200px)" }),
+    `@container (min-width: 200px){${innerOut}}`,
+  );
+  assert.equal(
+    ruleOverride({
+      cssRules: [inner],
+      containerQuery: "(min-width: 200px)",
+      containerName: "side",
+    }),
+    `@container side (min-width: 200px){${innerOut}}`,
+  );
+});
+
+test("ruleOverride returns empty for unthemeable or unknown rules", () => {
+  // style rule with no color-bearing declaration
+  assert.equal(ruleOverride(styleRule(".x", { display: "grid" })), "");
+  // group rule whose inner produces nothing
+  assert.equal(
+    ruleOverride({
+      cssRules: [styleRule(".x", { display: "grid" })],
+      media: { mediaText: "print" },
+    }),
+    "",
+  );
+  // unknown group (e.g. @keyframes): has cssRules but no media/condition/container
+  assert.equal(
+    ruleOverride({ cssRules: [styleRule(".s", { color: "rgba(15, 12, 8, 0.92)" })] }),
+    "",
+  );
 });

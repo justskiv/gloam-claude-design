@@ -8,38 +8,26 @@
  * inline colors, remaps them by value, and writes the result into a single
  * injected <style> plus minimal inline overrides.
  *
- * The design preview lives in a cross-origin <iframe> (claudeusercontent.com),
- * whose stylesheets are not part of this document — so it is physically
- * impossible for this engine to touch it. The preview stays pixel-identical.
+ * The design preview lives in a cross-origin <iframe> (claudeusercontent.com):
+ * it doesn't match our injection, and its stylesheets aren't readable from this
+ * document (cross-origin cssRules throws, and we skip those), so the engine
+ * never touches it — the preview is left untouched.
  *
  * Toggling: the page's own rules are never mutated. Overrides go into one
- * injected <style>; inline edits remember their originals. Disabling removes
- * the element, the gating attribute, and restores inline styles, leaving the
- * page byte-for-byte unchanged.
+ * injected <style>; inline edits remember the value they replaced. Disabling
+ * removes the <style> and the gating attribute and writes the remembered values
+ * back (where the page hasn't since written a newer one of its own).
  */
 
-/* global remap */
-// `remap` is defined in color.js, which the manifest loads first into this same
+/* global remap, FG_PROPS, ruleOverride */
+// These are defined in color.js, which the manifest loads first into this same
 // content-script scope (files in one content_scripts entry share one scope).
 
 const ATTR = "data-gloam";
-const api = typeof browser !== "undefined" ? browser : chrome;
-
-// Foreground properties paint text/icons, so a light source color must STAY
-// light on a dark theme (e.g. a button label colored #FAF9F5 — the same token
-// as the app background, but here it's text). color.js handles the recolor;
-// here we just flag which properties are foreground.
-const FG_PROPS = new Set([
-  "color",
-  "-webkit-text-fill-color",
-  "fill",
-  "caret-color",
-  "text-decoration-color",
-]);
 
 // Some surfaces (e.g. the top bar) get their color from an inline style, which
 // stylesheet overrides can't reach. We rewrite those directly and remember the
-// originals so disabling restores the page exactly.
+// value we replaced so disabling can restore it.
 const INLINE_PROPS = [
   "background-color",
   "background",
@@ -55,60 +43,74 @@ const INLINE_PROPS = [
   "outline-color",
 ];
 
-let inlineTouched = []; // [{ el, prop, orig, prio }]
+// Per touched (element, property) we keep { source, prio, applied }: `source`
+// is the page-authored value to restore on disable, `applied` is the serialized
+// value we last wrote. The WeakMap lets dead nodes be collected; the Set is an
+// iterable companion for restore (a WeakMap isn't enumerable) and is cleared on
+// disable.
+const inlineStore = new WeakMap(); // Element -> Map<prop, { source, prio, applied }>
+const touchedEls = new Set();
+
+function recolorInline(el) {
+  const st = el.style;
+  let store = inlineStore.get(el);
+  for (const prop of INLINE_PROPS) {
+    const current = st.getPropertyValue(prop);
+    if (!current || (!current.includes("(") && !current.includes("#"))) continue;
+    const rec = store && store.get(prop);
+    if (rec && current === rec.applied) continue; // our value is still in effect
+    // Otherwise the page authored `current` (first sight, or re-authored after a
+    // render): it becomes the value to restore. Read our write back so `applied`
+    // holds the SERIALIZED form (#262624 reads back as rgb(38, 38, 36)).
+    const next = remap(current, FG_PROPS.has(prop));
+    if (next === current) continue; // page value maps to itself — nothing to do
+    if (!store) {
+      store = new Map();
+      inlineStore.set(el, store);
+      touchedEls.add(el);
+    }
+    const prio = st.getPropertyPriority(prop);
+    st.setProperty(prop, next, "important");
+    store.set(prop, { source: current, prio, applied: st.getPropertyValue(prop) });
+  }
+}
 
 function applyInline() {
-  for (const el of document.querySelectorAll("[style]")) {
-    const st = el.style;
-    for (const prop of INLINE_PROPS) {
-      const val = st.getPropertyValue(prop);
-      if (!val || (!val.includes("(") && !val.includes("#"))) continue;
-      const next = remap(val, FG_PROPS.has(prop));
-      if (next === val) continue; // unchanged or already our (idempotent) value
-      inlineTouched.push({ el, prop, orig: val, prio: st.getPropertyPriority(prop) });
-      st.setProperty(prop, next, "important");
-    }
-  }
+  for (const el of document.querySelectorAll("[style]")) recolorInline(el);
 }
 
 function restoreInline() {
-  for (const t of inlineTouched) t.el.style.setProperty(t.prop, t.orig, t.prio);
-  inlineTouched = [];
-}
-
-/* --- Building overrides from the page's own rules. ------------------------ */
-function ruleOverride(rule) {
-  // Plain style rule.
-  if (rule.style && rule.selectorText) {
-    const decls = [];
-    const s = rule.style;
-    for (let i = 0; i < s.length; i++) {
-      const prop = s.item(i);
-      const val = s.getPropertyValue(prop);
-      if (!val || (val.indexOf("(") === -1 && val.indexOf("#") === -1)) continue;
-      const next = remap(val, FG_PROPS.has(prop));
-      if (next !== val) decls.push(`${prop}:${next} !important`);
+  for (const el of touchedEls) {
+    const store = inlineStore.get(el);
+    if (store) {
+      for (const [prop, rec] of store) {
+        // Undo only where our value is still in effect; if the page wrote a newer
+        // value since, leave it. An empty `applied` (a shorthand that didn't
+        // serialize back) can't be compared — restore unconditionally.
+        if (!rec.applied || el.style.getPropertyValue(prop) === rec.applied) {
+          el.style.setProperty(prop, rec.source, rec.prio);
+        }
+      }
     }
-    return decls.length ? `${rule.selectorText}{${decls.join(";")}}` : "";
+    inlineStore.delete(el);
   }
-  // Conditional group (@media / @supports) — recurse. Skip @keyframes etc.
-  if (rule.cssRules && (rule.conditionText || rule.media)) {
-    let inner = "";
-    for (const r of rule.cssRules) inner += ruleOverride(r);
-    if (!inner) return "";
-    const cond = rule.conditionText || rule.media.mediaText;
-    return `@media ${cond}{${inner}}`;
-  }
-  return "";
+  touchedEls.clear();
 }
 
 /* --- Engine lifecycle. ---------------------------------------------------- */
+const OBSERVE_OPTS = {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ["style"],
+};
+
 let enabled = false;
 let styleEl = null;
 let observer = null;
-let buffer = "";
-let seen = new WeakMap(); // stylesheet -> count of already-processed rules
 let scheduled = false;
+const pendingInline = new Set(); // elements whose inline style needs a recolor
+const unreadable = new WeakSet(); // cross-origin sheets we can't read — skip them
 
 function ensureStyle() {
   if (styleEl && styleEl.isConnected) return;
@@ -117,38 +119,63 @@ function ensureStyle() {
   (document.head || document.documentElement).appendChild(styleEl);
 }
 
-function scan() {
-  if (!enabled) return;
-  ensureStyle();
-  let added = "";
+// Rebuild the whole override sheet from the CURRENT CSSOM. Rebuilding (not
+// appending) is what lets us follow styled-components recycling its rule slots:
+// removed / reordered / replaced rules are reflected each pass, with no stale
+// leftovers and a single parse instead of an ever-growing one.
+function buildSheetOverrides() {
+  let css = "";
   for (const sheet of document.styleSheets) {
-    if (sheet.ownerNode === styleEl) continue;
+    if (sheet.ownerNode === styleEl || unreadable.has(sheet)) continue;
     let rules;
     try {
       rules = sheet.cssRules;
-    } catch {
-      continue; // cross-origin sheet — not ours to read
+    } catch (e) {
+      if (e.name === "SecurityError") unreadable.add(sheet); // cross-origin, forever
+      continue;
     }
     if (!rules) continue;
-    const start = seen.get(sheet) || 0;
-    if (rules.length <= start) continue;
-    for (let i = start; i < rules.length; i++) added += ruleOverride(rules[i]);
-    seen.set(sheet, rules.length);
+    for (const rule of rules) css += ruleOverride(rule);
   }
-  if (added) {
-    buffer += added;
-    styleEl.textContent = buffer;
+  return css;
+}
+
+function flush() {
+  scheduled = false;
+  if (!enabled) return;
+  ensureStyle();
+  // Apply with the observer detached so we don't react to our own writes (the
+  // injected <style> text and the inline edits). JS is single-threaded, so no
+  // real page mutation can slip past during this synchronous block.
+  observer.disconnect();
+  try {
+    styleEl.textContent = buildSheetOverrides();
+    for (const el of pendingInline) recolorInline(el);
+  } finally {
+    pendingInline.clear();
+    if (enabled) observer.observe(document.documentElement, OBSERVE_OPTS);
   }
-  applyInline();
 }
 
 function schedule() {
-  if (scheduled) return;
+  if (scheduled || !enabled) return;
   scheduled = true;
-  requestAnimationFrame(() => {
-    scheduled = false;
-    scan();
-  });
+  requestAnimationFrame(flush);
+}
+
+function onMutations(records) {
+  for (const rec of records) {
+    if (rec.type === "attributes") {
+      pendingInline.add(rec.target); // its style attribute changed
+    } else {
+      for (const node of rec.addedNodes) {
+        if (node.nodeType !== 1) continue; // elements only
+        if (node.hasAttribute("style")) pendingInline.add(node);
+        for (const el of node.querySelectorAll("[style]")) pendingInline.add(el);
+      }
+    }
+  }
+  schedule();
 }
 
 function enable() {
@@ -156,18 +183,15 @@ function enable() {
   enabled = true;
   document.documentElement.setAttribute(ATTR, "on");
   ensureStyle();
-  scan();
-  observer = new MutationObserver(schedule);
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["style"],
-  });
-  // Safety-net rescans: styled-components inserts rules via the CSSOM, which
-  // does not always coincide with an observed DOM mutation.
-  [200, 600, 1500, 3000].forEach((t) => setTimeout(() => enabled && scan(), t));
-  window.addEventListener("load", () => enabled && scan(), { once: true });
+  // One full pass before observing, so these initial writes aren't re-processed.
+  styleEl.textContent = buildSheetOverrides();
+  applyInline();
+  observer = new MutationObserver(onMutations);
+  observer.observe(document.documentElement, OBSERVE_OPTS);
+  // Safety-net rescans: styled-components inserts rules via the CSSOM, which does
+  // not always coincide with an observed DOM mutation.
+  [200, 600, 1500, 3000].forEach((t) => setTimeout(() => enabled && schedule(), t));
+  window.addEventListener("load", () => enabled && schedule(), { once: true });
 }
 
 function disable() {
@@ -183,17 +207,25 @@ function disable() {
     styleEl = null;
   }
   restoreInline();
-  buffer = "";
-  seen = new WeakMap();
+  pendingInline.clear();
 }
 
 /* --- Wire up to stored state. Default: enabled. --------------------------- */
-api.storage.local.get("enabled").then((r) => {
-  if (r.enabled !== false) enable();
-});
+// Belt-and-suspenders: only operate on the Claude Design tool itself. The URL
+// match already restricts injection, so this just rejects any stray frame (e.g.
+// an about:srcdoc/blob document) that should never be themed.
+const isDesignPanel =
+  location.hostname === "claude.ai" &&
+  (location.pathname === "/design" || location.pathname.startsWith("/design/"));
 
-api.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local" || !changes.enabled) return;
-  if (changes.enabled.newValue !== false) enable();
-  else disable();
-});
+if (isDesignPanel) {
+  browser.storage.local.get("enabled").then((r) => {
+    if (r.enabled !== false) enable();
+  });
+
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.enabled) return;
+    if (changes.enabled.newValue !== false) enable();
+    else disable();
+  });
+}

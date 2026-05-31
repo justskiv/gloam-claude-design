@@ -39,10 +39,9 @@
 
   "content_scripts": [
     {
-      "matches": ["*://claude.ai/design*"],
+      "matches": ["https://claude.ai/design*"],
       "run_at": "document_start",
       "all_frames": true,
-      "match_origin_as_fallback": true,
       "css": ["dark.css"],
       "js": ["color.js", "content.js"]
     }

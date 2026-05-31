@@ -20,18 +20,31 @@ tasks:
     cmds:
       - npx web-ext run
 
-  lint:
-    desc: Run every check (web-ext + eslint + stylelint + prettier)
+  run:chromium:
+    desc: Launch Chromium with the generated Chromium extension + auto-reload
     cmds:
-      - task: lint:ext
+      - task: build:chromium-source
+      - npx web-ext run --source-dir=dist/chromium --target=chromium
+
+  lint:
+    desc: Run every check (Firefox/Chromium package checks + eslint + stylelint + prettier)
+    cmds:
+      - task: lint:firefox
+      - task: lint:chromium
       - task: lint:js
       - task: lint:css
       - task: format:check
 
-  lint:ext:
-    desc: Validate manifest/packaging with Mozilla web-ext
+  lint:firefox:
+    desc: Validate the root Firefox manifest/packaging with web-ext
     cmds:
       - npx web-ext lint
+
+  lint:chromium:
+    desc: Generate and validate the Chromium manifest/packaging
+    cmds:
+      - task: build:chromium-source
+      - node scripts/lint-chromium.js
 
   lint:js:
     desc: Lint JavaScript with ESLint
@@ -63,11 +76,28 @@ tasks:
     cmds:
       - npx c8 node --test test/*.test.js
 
+  build:chromium-source:
+    desc: Generate dist/chromium with a Chromium MV3 service-worker manifest
+    cmds:
+      - node scripts/build-chromium.js
+
   build:
     desc: Build an installable .zip into web-ext-artifacts/
     cmds:
       # Packaging options (overwriteDest, ignoreFiles) live in package.json -> webExt.
       - npx web-ext build
+
+  build:chromium:
+    desc: Build the Chromium ZIP into web-ext-artifacts/chromium/
+    cmds:
+      - task: build:chromium-source
+      - npx web-ext build --source-dir=dist/chromium --artifacts-dir=web-ext-artifacts/chromium --overwrite-dest
+
+  build:all:
+    desc: Build Firefox and Chromium packages
+    cmds:
+      - task: build
+      - task: build:chromium
 
   sign:
     desc: Sign as "unlisted" for permanent personal install (needs AMO API keys)

@@ -3,7 +3,7 @@
 const globals = require("globals");
 
 module.exports = [
-  { ignores: ["node_modules/**", "web-ext-artifacts/**", "coverage/**"] },
+  { ignores: ["node_modules/**", "dist/**", "web-ext-artifacts/**", "coverage/**"] },
 
   // Extension scripts run in the browser / WebExtensions environment.
   {
@@ -27,7 +27,7 @@ module.exports = [
 
   // Node tooling / tests.
   {
-    files: ["*.config.js", "**/*.cjs", "**/*.test.js", "**/test/**/*.js"],
+    files: ["*.config.js", "scripts/**/*.js", "**/*.cjs", "**/*.test.js", "**/test/**/*.js"],
     languageOptions: {
       sourceType: "commonjs",
       globals: { ...globals.node },

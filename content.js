@@ -1,5 +1,7 @@
 "use strict";
 
+if (!globalThis.browser && globalThis.chrome) globalThis.browser = chrome;
+
 /*
  * Gloam — dark theme engine for the Claude Design native panels.
  *

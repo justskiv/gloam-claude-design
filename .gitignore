@@ -2,6 +2,7 @@
 node_modules/
 
 # build / signing output
+dist/
 web-ext-artifacts/
 *.xpi
 *.zip

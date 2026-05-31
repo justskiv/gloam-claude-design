@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Gloam — Dark Theme for Claude Design",
-  "version": "0.1.0",
-  "description": "Minimal dark theme for the Claude Design native panels. The design preview is left pixel-for-pixel untouched. Toggle on/off from the toolbar.",
+  "version": "0.2.0",
+  "description": "Dark theme for Claude Design native panels. The design preview stays untouched. Toggle on/off from the toolbar.",
   "author": "Nikolay Tuzov",
   "homepage_url": "https://github.com/justskiv/gloam-claude-design",
 
   "browser_specific_settings": {
     "gecko": {
       "id": "gloam-claude-design@skiv",
-      "strict_min_version": "128.0",
+      "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": ["none"]
       }
@@ -17,9 +17,11 @@
   },
 
   "icons": {
-    "32": "icons/icon.svg",
-    "48": "icons/icon.svg",
-    "96": "icons/icon.svg"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
   },
 
   "permissions": ["storage"],
@@ -27,9 +29,11 @@
   "action": {
     "default_title": "Gloam: toggle Claude Design dark theme",
     "default_icon": {
-      "32": "icons/icon.svg",
-      "48": "icons/icon.svg",
-      "96": "icons/icon.svg"
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png",
+      "128": "icons/icon-128.png"
     }
   },
 

@@ -1,5 +1,7 @@
 "use strict";
 
+if (!globalThis.browser && globalThis.chrome) globalThis.browser = chrome;
+
 /*
  * Toolbar toggle. Clicking the action flips a stored flag; content.js watches
  * storage and applies/removes the theme live. The badge reflects the state.

@@ -1,6 +1,6 @@
 name: Release
 
-# Publishing is a deliberate, tag-driven action: push a tag like `v1.0.1`
+# Publishing is a deliberate, tag-driven action: push a tag like `v0.2.0`
 # (or run this workflow manually). Plain pushes to main only run CI, they do
 # not publish.
 on:
@@ -14,9 +14,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
-      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,21 +24,129 @@ jobs:
 
       - run: npm ci
 
-      - run: npx web-ext lint
+      - run: npm run lint
 
-      - name: Build unsigned package
-        run: npm run build
+      - name: Build unsigned packages
+        run: npm run build:all
 
       - name: Sign & submit to AMO (listed)
-        if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
+        shell: bash
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         # --approval-timeout 0: submit and exit, don't wait for the signed XPI.
         # For listed add-ons that file only exists after Mozilla's review, so
         # waiting always times out even though the submission succeeded.
-        run: >
-          npx web-ext sign --channel=listed
-          --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET"
-          --amo-metadata amo-metadata.json
-          --approval-timeout 0
+        run: |
+          set -euo pipefail
+
+          if [ -z "${AMO_JWT_ISSUER}" ] || [ -z "${AMO_JWT_SECRET}" ]; then
+            echo "AMO credentials not configured; skipping AMO submission"
+            exit 0
+          fi
+
+          npx web-ext sign --channel=listed \
+            --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET" \
+            --amo-metadata amo-metadata.json \
+            --approval-timeout 0
+
+      - name: Publish to Chrome Web Store
+        shell: bash
+        env:
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CWS_PUBLISHER_ID}" ] ||
+             [ -z "${CWS_EXTENSION_ID}" ] ||
+             [ -z "${CWS_CLIENT_ID}" ] ||
+             [ -z "${CWS_CLIENT_SECRET}" ] ||
+             [ -z "${CWS_REFRESH_TOKEN}" ]; then
+            echo "Chrome Web Store credentials not configured; skipping publish"
+            exit 0
+          fi
+
+          shopt -s nullglob
+          chromium_zips=(web-ext-artifacts/chromium/*.zip)
+          if [ "${#chromium_zips[@]}" -ne 1 ]; then
+            echo "expected exactly one Chromium ZIP, found ${#chromium_zips[@]}" >&2
+            printf '%s\n' "${chromium_zips[@]}" >&2
+            exit 1
+          fi
+          chromium_zip="${chromium_zips[0]}"
+
+          json_field() {
+            node -e '
+              const fs = require("node:fs");
+              const field = process.argv[1];
+              const response = JSON.parse(fs.readFileSync(0, "utf8"));
+              const value = field
+                .split(".")
+                .reduce((current, key) => current?.[key], response);
+              if (value !== undefined && value !== null) {
+                process.stdout.write(String(value));
+              }
+            ' "$1"
+          }
+
+          token_json="$(curl --fail-with-body -sS https://oauth2.googleapis.com/token \
+            --data-urlencode "client_id=${CWS_CLIENT_ID}" \
+            --data-urlencode "client_secret=${CWS_CLIENT_SECRET}" \
+            --data-urlencode "refresh_token=${CWS_REFRESH_TOKEN}" \
+            --data-urlencode "grant_type=refresh_token")"
+          token="$(json_field access_token <<< "$token_json")"
+          if [ -z "$token" ]; then
+            echo "failed to read access token from OAuth response" >&2
+            echo "$token_json" >&2
+            exit 1
+          fi
+          echo "::add-mask::$token"
+
+          item="publishers/${CWS_PUBLISHER_ID}/items/${CWS_EXTENSION_ID}"
+          upload_json="$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${token}" \
+            -X POST -T "$chromium_zip" \
+            "https://chromewebstore.googleapis.com/upload/v2/${item}:upload")"
+          upload_state="$(json_field uploadState <<< "$upload_json")"
+
+          case "$upload_state" in
+            SUCCEEDED)
+              ;;
+            IN_PROGRESS|UPLOAD_IN_PROGRESS)
+              upload_state=""
+              for attempt in {1..30}; do
+                sleep 10
+                status_json="$(curl --fail-with-body -sS \
+                  -H "Authorization: Bearer ${token}" \
+                  "https://chromewebstore.googleapis.com/v2/${item}:fetchStatus")"
+                upload_state="$(json_field lastAsyncUploadState <<< "$status_json")"
+                echo "Chrome Web Store upload state: ${upload_state:-unknown}"
+                if [ "$upload_state" = "SUCCEEDED" ]; then
+                  break
+                fi
+                if [ "$upload_state" != "IN_PROGRESS" ] &&
+                   [ "$upload_state" != "UPLOAD_IN_PROGRESS" ]; then
+                  echo "$status_json" >&2
+                  exit 1
+                fi
+                if [ "$attempt" -eq 30 ]; then
+                  echo "timed out waiting for Chrome Web Store upload" >&2
+                  exit 1
+                fi
+              done
+              ;;
+            *)
+              echo "$upload_json" >&2
+              exit 1
+              ;;
+          esac
+
+          curl --fail-with-body -sS -H "Authorization: Bearer ${token}" -X POST \
+            "https://chromewebstore.googleapis.com/v2/${item}:publish"
 
       - name: Attach artifacts to the GitHub Release
         uses: softprops/action-gh-release@v2
@@ -49,3 +154,4 @@ jobs:
           files: |
             web-ext-artifacts/*.zip
             web-ext-artifacts/*.xpi
+            web-ext-artifacts/chromium/*.zip

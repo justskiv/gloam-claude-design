@@ -1,6 +1,6 @@
 {
   "extends": "stylelint-config-standard",
-  "ignoreFiles": ["node_modules/**", "web-ext-artifacts/**", "coverage/**"],
+  "ignoreFiles": ["node_modules/**", "dist/**", "web-ext-artifacts/**", "coverage/**"],
   "rules": {
     "declaration-no-important": null,
     "selector-class-pattern": null,

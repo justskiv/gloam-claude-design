@@ -14,8 +14,29 @@
     "format": "prettier --write .",
     "test": "node --test test/*.test.js",
     "coverage": "c8 node --test test/*.test.js",
-    "build": "web-ext build --overwrite-dest --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'",
-    "sign": "web-ext sign --channel=unlisted --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'"
+    "build": "web-ext build",
+    "sign": "web-ext sign --channel=unlisted"
+  },
+  "webExt": {
+    "build": {
+      "overwriteDest": true
+    },
+    "ignoreFiles": [
+      "README.md",
+      "AGENTS.md",
+      "assets",
+      "assets/**",
+      "test",
+      "test/**",
+      "coverage",
+      "coverage/**",
+      "package.json",
+      "package-lock.json",
+      "Taskfile.yml",
+      "eslint.config.js",
+      "codecov.yml",
+      "CHANGELOG.md"
+    ]
   },
   "c8": {
     "include": [

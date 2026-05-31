@@ -66,9 +66,10 @@ tasks:
   build:
     desc: Build an installable .zip into web-ext-artifacts/
     cmds:
-      - npx web-ext build --overwrite-dest --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'
+      # Packaging options (overwriteDest, ignoreFiles) live in package.json -> webExt.
+      - npx web-ext build
 
   sign:
     desc: Sign as "unlisted" for permanent personal install (needs AMO API keys)
     cmds:
-      - npx web-ext sign --channel=unlisted --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json package-lock.json CHANGELOG.md 'test/**' 'coverage/**'
+      - npx web-ext sign --channel=unlisted

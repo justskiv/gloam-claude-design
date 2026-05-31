@@ -33,12 +33,10 @@ jobs:
         run: npm run build
 
       - name: Sign & submit to AMO (listed)
-        if: env.AMO_JWT_ISSUER != ''
+        if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
         run: >
           npx web-ext sign --channel=listed
           --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET"
-          --ignore-files Taskfile.yml codecov.yml eslint.config.js package.json
-          package-lock.json CHANGELOG.md 'test/**' 'coverage/**'
 
       - name: Attach artifacts to the GitHub Release
         uses: softprops/action-gh-release@v2

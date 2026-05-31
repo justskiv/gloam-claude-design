@@ -34,10 +34,14 @@ jobs:
 
       - name: Sign & submit to AMO (listed)
         if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
+        # --approval-timeout 0: submit and exit, don't wait for the signed XPI.
+        # For listed add-ons that file only exists after Mozilla's review, so
+        # waiting always times out even though the submission succeeded.
         run: >
           npx web-ext sign --channel=listed
           --api-key="$AMO_JWT_ISSUER" --api-secret="$AMO_JWT_SECRET"
           --amo-metadata amo-metadata.json
+          --approval-timeout 0
 
       - name: Attach artifacts to the GitHub Release
         uses: softprops/action-gh-release@v2
